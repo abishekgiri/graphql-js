@@ -32,8 +32,8 @@ type CoercedVariableValues =
  * provided variable definitions and arbitrary input. If the input cannot be
  * parsed to match the variable definitions, a GraphQLError will be thrown.
  *
- * Note: The returned value uses a null prototype to avoid collisions with
- * JavaScript's own property names.
+ * Note: The `coerced` property of the returned value uses a null prototype to
+ * avoid collisions with JavaScript's own property names.
  */
 export function getVariableValues(
   schema: GraphQLSchema,

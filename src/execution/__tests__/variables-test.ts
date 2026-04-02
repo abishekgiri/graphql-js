@@ -129,6 +129,15 @@ const TestType = new GraphQLObjectType({
       type: TestNestedInputObject,
       defaultValue: 'Hello World',
     }),
+    fieldWithPrototypeNamedArgument: {
+      type: GraphQLString,
+      args: {
+        toString: { type: GraphQLString },
+      },
+      resolve(_, args) {
+        return args.toString === undefined ? 'missing' : inspect(args.toString);
+      },
+    },
     list: fieldWithInputArg({ type: new GraphQLList(GraphQLString) }),
     nnList: fieldWithInputArg({
       type: new GraphQLNonNull(new GraphQLList(GraphQLString)),
@@ -1064,6 +1073,20 @@ describe('Execute: Handles inputs', () => {
         },
       });
     });
+
+    it('does not expose prototype argument names when omitted', () => {
+      const result = executeQuery(`
+        {
+          fieldWithPrototypeNamedArgument
+        }
+      `);
+
+      expect(result).to.deep.equal({
+        data: {
+          fieldWithPrototypeNamedArgument: 'missing',
+        },
+      });
+    });
   });
 
   describe('getVariableValues: limit maximum number of coercion errors', () => {
@@ -1134,6 +1157,47 @@ describe('Execute: Handles inputs', () => {
           },
         ],
       });
+    });
+  });
+
+  describe('getVariableValues: own-property names', () => {
+    const doc = parse(`
+      query ($toString: String) {
+        fieldWithNullableStringInput(input: $toString)
+      }
+    `);
+
+    const operation = doc.definitions[0];
+    invariant(operation.kind === Kind.OPERATION_DEFINITION);
+    const { variableDefinitions } = operation;
+    invariant(variableDefinitions != null);
+
+    it('does not expose prototype variable names when omitted', () => {
+      const result = getVariableValues(schema, variableDefinitions, {});
+      if (!('coerced' in result)) {
+        throw new Error('Expected coerced variable values.');
+      }
+      const coerced = result.coerced as { toString?: unknown } | undefined;
+      if (coerced == null) {
+        throw new Error('Expected coerced variable values.');
+      }
+
+      expect(coerced.toString).to.equal(undefined);
+    });
+
+    it('still returns provided variables with colliding names', () => {
+      const result = getVariableValues(schema, variableDefinitions, {
+        toString: 'value',
+      });
+      if (!('coerced' in result)) {
+        throw new Error('Expected coerced variable values.');
+      }
+      const coerced = result.coerced as { toString?: unknown } | undefined;
+      if (coerced == null) {
+        throw new Error('Expected coerced variable values.');
+      }
+
+      expect(coerced.toString).to.equal('value');
     });
   });
 });

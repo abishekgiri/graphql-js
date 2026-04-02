@@ -253,6 +253,27 @@ describe('coerceInputValue', () => {
       ]);
     });
 
+    it('does not treat inherited required fields as provided', () => {
+      const inputValue = Object.create({ foo: 123 });
+      const result = coerceValue(inputValue, TestInputObject);
+
+      expect(result.errors).to.have.length(1);
+      expect(result.errors[0]).to.deep.include({
+        error: 'Field "foo" of required type "Int!" was not provided.',
+        path: [],
+      });
+      expect(result.errors[0].value).to.equal(inputValue);
+    });
+
+    it('does not coerce inherited optional fields', () => {
+      const inputValue = Object.assign(Object.create({ bar: 456 }), {
+        foo: 123,
+      });
+      const result = coerceValue(inputValue, TestInputObject);
+
+      expectValue(result).to.deep.equal({ foo: 123 });
+    });
+
     it('returns error for an unknown field', () => {
       const result = coerceValue(
         { foo: 123, unknownField: 123 },

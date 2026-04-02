@@ -99,7 +99,9 @@ function coerceInputValueImpl(
     const fieldDefs = type.getFields();
 
     for (const field of Object.values(fieldDefs)) {
-      const fieldValue = inputValue[field.name];
+      const fieldValue = hasOwnProperty(inputValue, field.name)
+        ? inputValue[field.name]
+        : undefined;
 
       if (fieldValue === undefined) {
         if (field.defaultValue !== undefined) {
@@ -203,4 +205,11 @@ function coerceInputValueImpl(
   /* c8 ignore next 3 */
   // Not reachable, all possible types have been considered.
   invariant(false, 'Unexpected input type: ' + inspect(type));
+}
+
+function hasOwnProperty(
+  obj: { [key: string]: unknown },
+  prop: string,
+): boolean {
+  return Object.prototype.hasOwnProperty.call(obj, prop);
 }
